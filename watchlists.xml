@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<watchlists selected="ゴールド">
+  <watchlist name="主要指標" reference_ticker="GC=F">
+    <ticker>^GSPC</ticker>
+    <ticker>JPYUSD=X</ticker>
+    <ticker>GC=F</ticker>
+  </watchlist>
+  <watchlist name="ゴールド" reference_ticker="GC=F">
+    <ticker>314A.T</ticker>
+    <ticker>GC=F</ticker>
+    <ticker>1326.T</ticker>
+    <ticker>1540.T</ticker>
+  </watchlist>
+  <watchlist name="貴金属" reference_ticker="PL=F">
+    <ticker>GC=F</ticker>
+    <ticker>SI=F</ticker>
+    <ticker>PL=F</ticker>
+  </watchlist>
+  <watchlist name="通貨" reference_ticker="">
+    <ticker>USDJPY=FX</ticker>
+  </watchlist>
+</watchlists>
