@@ -17,6 +17,8 @@ if 'reference_tickers' not in st.session_state:
     st.session_state.reference_tickers = {}
 if 'hidden_tickers' not in st.session_state:
     st.session_state.hidden_tickers = {}
+if 'use_log_scale' not in st.session_state:
+    st.session_state.use_log_scale = False
 
 # ローカル保存ファイル
 SAVE_FILE = 'watchlists.xml'
@@ -303,6 +305,8 @@ st.session_state.current_watchlist = st.sidebar.selectbox("ウォッチリスト
 
 # ウォッチリスト選択変更時に右側ウィンドウを更新
 if st.session_state.current_watchlist != previous_watchlist:
+    # ウォッチリスト変更時にログスケール状態をリセット
+    st.session_state.use_log_scale = False
     st.rerun()
 
 if st.session_state.current_watchlist != "なし":
@@ -451,6 +455,13 @@ if st.session_state.current_watchlist != "なし" and len(st.session_state.watch
                       labels={'value': '変化 (%)', 'variable': 'ティッカー'})
         fig.update_layout(xaxis_title="日付", yaxis_title="変化 (%)")
         fig.update_xaxes(rangeslider_visible=True)
+
+        # ログスケール切り替えチェックボックス
+        st.session_state.use_log_scale = st.checkbox("縦軸をログスケールにする", value=st.session_state.use_log_scale)
+        if st.session_state.use_log_scale:
+            fig.update_yaxes(type='log')
+        else:
+            fig.update_yaxes(type='linear')
         st.plotly_chart(fig, use_container_width=True)
 
         # チャート下にティッカーと名称を表示（チェックボックス付き）
