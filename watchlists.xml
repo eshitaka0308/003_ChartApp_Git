@@ -17,6 +17,11 @@
     <ticker>PL=F</ticker>
   </watchlist>
   <watchlist name="通貨" reference_ticker="">
-    <ticker>USDJPY=FX</ticker>
+    <ticker>USDJPY=X</ticker>
+    <ticker>CNYJPY=X</ticker>
+    <ticker>EURJPY=X</ticker>
+    <ticker>CHFJPY=X</ticker>
+    <ticker>VNDJPY=X</ticker>
+    <ticker>TRYJPY=X</ticker>
   </watchlist>
 </watchlists>

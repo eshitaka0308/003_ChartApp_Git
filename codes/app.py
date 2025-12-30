@@ -388,7 +388,7 @@ if st.session_state.current_watchlist != "なし" and len(st.session_state.watch
     
     data = get_data(tickers, period)
     if not data.empty:
-        # 正規化方法に応じて処理
+        # 正規化方法に応じて処理 
         if normalize_method == "左端を100%にする":
             normalized_data = normalize_data(data, normalize_method='left_edge')
             chart_title = f"{st.session_state.current_watchlist} のチャート (左端を100%で正規化)"
