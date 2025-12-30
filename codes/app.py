@@ -32,26 +32,32 @@ def load_watchlists():
             root = tree.getroot()
             result = {}
             ref_tickers = {}
+            hidden_tickers = {}
             # 保存時にルート要素に付与した選択中ウォッチリスト属性を取得
             selected = root.get('selected', '')
             for wl in root.findall('watchlist'):
                 name = wl.get('name')
                 tickers = [t.text for t in wl.findall('ticker') if t.text]
                 reference_ticker = wl.get('reference_ticker', '')
+                hidden = [h.text for h in wl.findall('hidden') if h.text]
                 result[name] = tickers
                 if reference_ticker:
                     ref_tickers[name] = reference_ticker
-            return result, ref_tickers, selected
+                if hidden:
+                    hidden_tickers[name] = hidden
+            return result, ref_tickers, selected, hidden_tickers
         except Exception as e:
             st.error(f"ウォッチリスト読み込みエラー: {e}")
-            return {}, {}, ''
-    return {}, {}, ''
+            return {}, {}, '', {}
+    return {}, {}, '', {}
 
 
-def save_watchlists(watchlists, reference_tickers=None):
+def save_watchlists(watchlists, reference_tickers=None, hidden_tickers=None):
     from xml.dom import minidom
     if reference_tickers is None:
         reference_tickers = {}
+    if hidden_tickers is None:
+        hidden_tickers = {}
     # 現在選択中のウォッチリストを属性として保存（存在しない/なし の場合は空文字）
     selected = ''
     try:
@@ -67,6 +73,11 @@ def save_watchlists(watchlists, reference_tickers=None):
         for t in tickers:
             te = ET.SubElement(wl, 'ticker')
             te.text = t
+        # 非表示ティッカーを保存
+        hidden_list = hidden_tickers.get(name, [])
+        for h in hidden_list:
+            he = ET.SubElement(wl, 'hidden')
+            he.text = h
     try:
         # XML を整形して保存
         rough_string = ET.tostring(root, encoding='utf-8')
@@ -80,10 +91,12 @@ def save_watchlists(watchlists, reference_tickers=None):
     except Exception as e:
         st.error(f"ウォッチリスト保存エラー: {e}")
 
-def watchlists_to_xml_bytes(watchlists, reference_tickers=None):
+def watchlists_to_xml_bytes(watchlists, reference_tickers=None, hidden_tickers=None):
     from xml.dom import minidom
     if reference_tickers is None:
         reference_tickers = {}
+    if hidden_tickers is None:
+        hidden_tickers = {}
     # 現在選択中のウォッチリストを属性として含める
     selected = ''
     try:
@@ -99,6 +112,11 @@ def watchlists_to_xml_bytes(watchlists, reference_tickers=None):
         for t in tickers:
             te = ET.SubElement(wl, 'ticker')
             te.text = t
+        # 非表示ティッカーを保存
+        hidden_list = hidden_tickers.get(name, [])
+        for h in hidden_list:
+            he = ET.SubElement(wl, 'hidden')
+            he.text = h
     # XML を整形してバイト列で返す
     rough_string = ET.tostring(root, encoding='utf-8')
     reparsed = minidom.parseString(rough_string)
@@ -113,15 +131,19 @@ def load_watchlists_from_bytes(bytes_data):
         root = ET.fromstring(bytes_data)
         result = {}
         ref_tickers = {}
+        hidden_tickers = {}
         selected = root.get('selected', '')
         for wl in root.findall('watchlist'):
             name = wl.get('name')
             tickers = [t.text for t in wl.findall('ticker') if t.text]
             reference_ticker = wl.get('reference_ticker', '')
+            hidden = [h.text for h in wl.findall('hidden') if h.text]
             result[name] = tickers
             if reference_ticker:
                 ref_tickers[name] = reference_ticker
-        return result, ref_tickers, selected
+            if hidden:
+                hidden_tickers[name] = hidden
+        return result, ref_tickers, selected, hidden_tickers
     except Exception as e:
         raise
 
@@ -252,9 +274,10 @@ def normalize_data(data, normalize_method='left_edge_with_reference', reference_
 
 # 初期読み込み（セッションが空ならファイルから読み込む）
 if not st.session_state.watchlists:
-    watchlists_data, ref_tickers_data, selected = load_watchlists()
+    watchlists_data, ref_tickers_data, selected, hidden_tickers_data = load_watchlists()
     st.session_state.watchlists = watchlists_data
     st.session_state.reference_tickers = ref_tickers_data
+    st.session_state.hidden_tickers = hidden_tickers_data
     # 保存時に選択していたウォッチリストを復元（存在しない/空ならそのまま）
     if selected:
         st.session_state.current_watchlist = selected
@@ -293,7 +316,7 @@ if st.sidebar.button("名前変更"):
             # 新しいキーが存在しない場合は空にしておく
             st.session_state.reference_tickers.pop(new, None)
         # 保存して表示を更新
-        save_watchlists(st.session_state.watchlists, st.session_state.reference_tickers)
+        save_watchlists(st.session_state.watchlists, st.session_state.reference_tickers, st.session_state.hidden_tickers)
         st.session_state.current_watchlist = new
         st.sidebar.success(f"{old} を {new} に名前変更しました")
         st.rerun()
@@ -322,11 +345,12 @@ uploaded = st.sidebar.file_uploader("XMLファイルを読み込む", type=['xml
 if uploaded is not None:
     try:
         data = uploaded.read()
-        loaded, loaded_refs, loaded_selected = load_watchlists_from_bytes(data)
+        loaded, loaded_refs, loaded_selected, loaded_hidden = load_watchlists_from_bytes(data)
         st.session_state.watchlists = loaded
         st.session_state.reference_tickers = loaded_refs
+        st.session_state.hidden_tickers = loaded_hidden
         # サーバー側にも保存しておく（オプション）
-        save_watchlists(st.session_state.watchlists, st.session_state.reference_tickers)
+        save_watchlists(st.session_state.watchlists, st.session_state.reference_tickers, st.session_state.hidden_tickers)
         # 読み込み後、XMLに保存されていた選択ウォッチリストがあれば復元、なければ最初のウォッチリストを自動選択
         if loaded_selected:
             st.session_state.current_watchlist = loaded_selected
@@ -341,13 +365,13 @@ if uploaded is not None:
 # サーバーに上書き保存（ローカルファイルを更新）
 if st.sidebar.button("上書き保存（サーバー）"):
     try:
-        save_watchlists(st.session_state.watchlists, st.session_state.reference_tickers)
+        save_watchlists(st.session_state.watchlists, st.session_state.reference_tickers, st.session_state.hidden_tickers)
         st.sidebar.success(f"{SAVE_FILE} に上書き保存しました")
     except Exception as e:
         st.sidebar.error(f"保存エラー: {e}")
 
 # ダウンロード（任意の場所へ保存）
-xml_bytes = watchlists_to_xml_bytes(st.session_state.watchlists, st.session_state.reference_tickers)
+xml_bytes = watchlists_to_xml_bytes(st.session_state.watchlists, st.session_state.reference_tickers, st.session_state.hidden_tickers)
 st.sidebar.download_button("ダウンロード (XML)", data=xml_bytes, file_name="watchlists.xml", mime="application/xml")
 
 # ティッカー登録（マニュアルのみ）
@@ -362,7 +386,7 @@ if st.sidebar.button("登録") and st.session_state.current_watchlist != "なし
         st.sidebar.info("既に登録されています")
     elif validate_ticker(ticker_to_add):
         st.session_state.watchlists[st.session_state.current_watchlist].append(ticker_to_add)
-        save_watchlists(st.session_state.watchlists, st.session_state.reference_tickers)
+        save_watchlists(st.session_state.watchlists, st.session_state.reference_tickers, st.session_state.hidden_tickers)
         st.sidebar.success(f"{ticker_to_add} を登録しました")
     else:
         st.sidebar.error("無効なティッカーです")
@@ -374,7 +398,7 @@ if st.session_state.current_watchlist != "なし":
         for t in to_remove:
             if t in st.session_state.watchlists[st.session_state.current_watchlist]:
                 st.session_state.watchlists[st.session_state.current_watchlist].remove(t)
-        save_watchlists(st.session_state.watchlists, st.session_state.reference_tickers)
+        save_watchlists(st.session_state.watchlists, st.session_state.reference_tickers, st.session_state.hidden_tickers)
         st.rerun()
 
 # メイン: チャート表示
@@ -431,7 +455,7 @@ if st.session_state.current_watchlist != "なし" and len(st.session_state.watch
             # 選択内容を保存
             if reference_ticker != current_ref:
                 st.session_state.reference_tickers[st.session_state.current_watchlist] = reference_ticker
-                save_watchlists(st.session_state.watchlists, st.session_state.reference_tickers)
+                save_watchlists(st.session_state.watchlists, st.session_state.reference_tickers, st.session_state.hidden_tickers)
             normalized_data = normalize_data(data, normalize_method='reference_ticker', reference_ticker=reference_ticker)
             chart_title = f"{st.session_state.current_watchlist} のチャート ({reference_ticker} で毎回正規化)"
         
@@ -446,7 +470,7 @@ if st.session_state.current_watchlist != "なし" and len(st.session_state.watch
             # 選択内容を保存
             if reference_ticker != current_ref:
                 st.session_state.reference_tickers[st.session_state.current_watchlist] = reference_ticker
-                save_watchlists(st.session_state.watchlists, st.session_state.reference_tickers)
+                save_watchlists(st.session_state.watchlists, st.session_state.reference_tickers, st.session_state.hidden_tickers)
             normalized_data = normalize_data(data, normalize_method='left_edge_with_reference', reference_ticker=reference_ticker)
             chart_title = f"{st.session_state.current_watchlist} のチャート (左端を100%→{reference_ticker}を100%に調整)"
         

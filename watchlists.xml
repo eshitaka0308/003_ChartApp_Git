@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<watchlists selected="貴金属">
+<watchlists selected="自動車">
   <watchlist name="主要指標" reference_ticker="GC=F">
     <ticker>^GSPC</ticker>
     <ticker>JPYUSD=X</ticker>
     <ticker>GC=F</ticker>
+    <ticker>^IXIC</ticker>
+    <ticker>^N225</ticker>
   </watchlist>
   <watchlist name="ゴールド" reference_ticker="GC=F">
     <ticker>314A.T</ticker>
@@ -11,7 +13,9 @@
     <ticker>1326.T</ticker>
     <ticker>1540.T</ticker>
     <ticker>NUGT</ticker>
-    <ticker>2037.T</ticker>
+    <ticker>2036.T</ticker>
+    <hidden>NUGT</hidden>
+    <hidden>1326.T</hidden>
   </watchlist>
   <watchlist name="貴金属" reference_ticker="GC=F">
     <ticker>GC=F</ticker>
@@ -26,5 +30,13 @@
     <ticker>CHFJPY=X</ticker>
     <ticker>VNDJPY=X</ticker>
     <ticker>TRYJPY=X</ticker>
+    <hidden>TRYJPY=X</hidden>
+  </watchlist>
+  <watchlist name="自動車" reference_ticker="">
+    <ticker>TM</ticker>
+    <ticker>7203.T</ticker>
+    <ticker>TSLA</ticker>
+    <ticker>BYDDY</ticker>
+    <ticker>BMW.DE</ticker>
   </watchlist>
 </watchlists>
