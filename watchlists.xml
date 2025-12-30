@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<watchlists selected="ゴールド">
+<watchlists selected="貴金属">
   <watchlist name="主要指標" reference_ticker="GC=F">
     <ticker>^GSPC</ticker>
     <ticker>JPYUSD=X</ticker>
@@ -10,11 +10,14 @@
     <ticker>GC=F</ticker>
     <ticker>1326.T</ticker>
     <ticker>1540.T</ticker>
+    <ticker>NUGT</ticker>
+    <ticker>2037.T</ticker>
   </watchlist>
-  <watchlist name="貴金属" reference_ticker="PL=F">
+  <watchlist name="貴金属" reference_ticker="GC=F">
     <ticker>GC=F</ticker>
     <ticker>SI=F</ticker>
     <ticker>PL=F</ticker>
+    <ticker>HG=F</ticker>
   </watchlist>
   <watchlist name="通貨" reference_ticker="">
     <ticker>USDJPY=X</ticker>

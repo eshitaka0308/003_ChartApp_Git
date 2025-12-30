@@ -6,6 +6,8 @@ import os
 import xml.etree.ElementTree as ET
 import io
 
+## Streamlit: https://essy-003-chartapp-git.streamlit.app/
+
 # セッション状態初期化
 if 'watchlists' not in st.session_state:
     st.session_state.watchlists = {}
@@ -13,6 +15,8 @@ if 'current_watchlist' not in st.session_state:
     st.session_state.current_watchlist = None
 if 'reference_tickers' not in st.session_state:
     st.session_state.reference_tickers = {}
+if 'hidden_tickers' not in st.session_state:
+    st.session_state.hidden_tickers = {}
 
 # ローカル保存ファイル
 SAVE_FILE = 'watchlists.xml'
@@ -374,6 +378,14 @@ if st.session_state.current_watchlist != "なし" and len(st.session_state.watch
     tickers = st.session_state.watchlists[st.session_state.current_watchlist]
     periods = ['1d', '5d', '1mo', '3mo', '6mo', '1y', '2y', '5y', '10y', 'ytd', 'max']
     
+    # チェックボックス状態変更時のコールバック関数
+    def toggle_visibility(ticker):
+        hidden_list = st.session_state.hidden_tickers[st.session_state.current_watchlist]
+        if ticker in hidden_list:
+            hidden_list.remove(ticker)
+        else:
+            hidden_list.append(ticker)
+    
     col1, col2 = st.columns(2)
     with col1:
         period = st.selectbox("表示期間", periods, index=periods.index('1y'), key="period_select")
@@ -388,6 +400,17 @@ if st.session_state.current_watchlist != "なし" and len(st.session_state.watch
     
     data = get_data(tickers, period)
     if not data.empty:
+        # 非表示ティッカーを取得（ウォッチリストがなければ空リスト）
+        hidden_list = st.session_state.hidden_tickers.get(st.session_state.current_watchlist, [])
+        # 表示対象のティッカーをフィルタ
+        display_tickers = [t for t in data.columns if t not in hidden_list]
+        
+        # 表示対象がない場合の処理
+        if not display_tickers:
+            st.warning("表示対象のティッカーがありません。チェックボックスで表示するティッカーを選択してください。")
+        else:
+            # フィルタ後のデータのみを使用
+            data = data[display_tickers]
         # 正規化方法に応じて処理 
         if normalize_method == "左端を100%にする":
             normalized_data = normalize_data(data, normalize_method='left_edge')
@@ -430,22 +453,45 @@ if st.session_state.current_watchlist != "なし" and len(st.session_state.watch
         fig.update_xaxes(rangeslider_visible=True)
         st.plotly_chart(fig, use_container_width=True)
 
-        # チャート下にティッカーと名称を表示
+        # チャート下にティッカーと名称を表示（チェックボックス付き）
         try:
-            labels = []
-            for t in normalized_data.columns:
-                name = get_ticker_name(t)
-                gf_link = f"[GF](https://www.google.com/finance/quote/{t})"
-                yf_link = f"[YF](https://finance.yahoo.co.jp/quote/{t}/chart)"
-                yfc_link = f"[YFC](https://finance.yahoo.com/quote/{t})"
-                if name:
-                    labels.append(f"{t} {name} ({gf_link}, {yf_link}, {yfc_link})")
-                else:
-                    labels.append(f"{t} ({gf_link}, {yf_link}, {yfc_link})")
-            st.markdown("**ティッカー一覧**")
-            # 各名称ごとに改行して表示
-            for lbl in labels:
-                st.markdown(lbl)
+            # 現在のウォッチリスト用の hidden_tickers を初期化
+            if st.session_state.current_watchlist not in st.session_state.hidden_tickers:
+                st.session_state.hidden_tickers[st.session_state.current_watchlist] = []
+            
+            hidden_list = st.session_state.hidden_tickers[st.session_state.current_watchlist]
+            
+            st.markdown("**ティッカー一覧（表示/非表示）**")
+            
+            # チェックボックスをコラム配置で表示
+            cols = st.columns(3)  # 3列のレイアウト
+            col_idx = 0
+            
+            for t in tickers:
+                col = cols[col_idx % 3]
+                
+                is_hidden = t in hidden_list
+                
+                with col:
+                    # チェックボックス：チェック = 表示, 非チェック = 非表示
+                    new_state = st.checkbox(
+                        t,
+                        value=(not is_hidden),  # 非表示なら False, 表示なら True
+                        key=f"ticker_visibility_{st.session_state.current_watchlist}_{t}",
+                        on_change=lambda ticker=t: toggle_visibility(ticker)
+                    )
+                    
+                    # ティッカー情報を表示
+                    name = get_ticker_name(t)
+                    gf_link = f"[GF](https://www.google.com/finance/quote/{t})"
+                    yf_link = f"[YF](https://finance.yahoo.co.jp/quote/{t}/chart)"
+                    yfc_link = f"[YFC](https://finance.yahoo.com/quote/{t})"
+                    if name:
+                        st.caption(f"{name} ({gf_link}, {yf_link}, {yfc_link})")
+                    else:
+                        st.caption(f"({gf_link}, {yf_link}, {yfc_link})")
+                
+                col_idx += 1
         except Exception:
             pass
     else:
